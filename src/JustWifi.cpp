@@ -428,21 +428,27 @@ bool JustWifi::_doAP() {
     if (!_softap.ssid) {
         _softap.ssid = strdup(_hostname);
     }
-
+    //WiFi.onEvent(reinterpret_cast<WiFiEventCb>(&JustWifi::_events), SYSTEM_EVENT_AP_START);
+    //WiFi.onEvent(reinterpret_cast<WiFiEventCb>(&JustWifi::_events));
+    //------
+    // WiFi events
+    
+    //------
     _doCallback(MESSAGE_ACCESSPOINT_CREATING);
 
     WiFi.enableAP(true);
-
-    // Configure static options
-    if (_softap.dhcp) {
-        WiFi.softAPConfig(_softap.ip, _softap.gw, _softap.netmask);
-    }
 
     if (_softap.pass) {
         WiFi.softAP(_softap.ssid, _softap.pass);
     } else {
         WiFi.softAP(_softap.ssid);
     }
+    
+    //delay(100);
+    // Configure static options
+    //if (_softap.dhcp) {
+    //    WiFi.softAPConfig(_softap.ip, _softap.gw, _softap.netmask);
+    //}
 
     _doCallback(MESSAGE_ACCESSPOINT_CREATED);
 
@@ -936,14 +942,105 @@ void JustWifi::enableScan(bool scan) {
 }
 
 void JustWifi::_events(WiFiEvent_t event) {
-    Serial.printf("[WIFI] Event %u\n", (uint8_t) event);
-    Serial.println(event);
+    //Serial.printf("[WIFIDRV] Event %u\n", (uint8_t) event);
+    //Serial.println(event);
+    /*Serial.printf("[WiFi-event] event: %d\n", event);
+
+    switch (event) {
+        case SYSTEM_EVENT_WIFI_READY: 
+            Serial.println("WiFi interface ready");
+            break;
+        case SYSTEM_EVENT_SCAN_DONE:
+            Serial.println("Completed scan for access points");
+            break;
+        case SYSTEM_EVENT_STA_START:
+            Serial.println("WiFi client started");
+            break;
+        case SYSTEM_EVENT_STA_STOP:
+            Serial.println("WiFi clients stopped");
+            break;
+        case SYSTEM_EVENT_STA_CONNECTED:
+            Serial.println("Connected to access point");
+            break;
+        case SYSTEM_EVENT_STA_DISCONNECTED:
+            Serial.println("Disconnected from WiFi access point");
+            break;
+        case SYSTEM_EVENT_STA_AUTHMODE_CHANGE:
+            Serial.println("Authentication mode of access point has changed");
+            break;
+        case SYSTEM_EVENT_STA_GOT_IP:
+            Serial.print("Obtained IP address: ");
+            Serial.println(WiFi.localIP());
+            break;
+        case SYSTEM_EVENT_STA_LOST_IP:
+            Serial.println("Lost IP address and IP address is reset to 0");
+            break;
+        case SYSTEM_EVENT_STA_WPS_ER_SUCCESS:
+            Serial.println("WiFi Protected Setup (WPS): succeeded in enrollee mode");
+            break;
+        case SYSTEM_EVENT_STA_WPS_ER_FAILED:
+            Serial.println("WiFi Protected Setup (WPS): failed in enrollee mode");
+            break;
+        case SYSTEM_EVENT_STA_WPS_ER_TIMEOUT:
+            Serial.println("WiFi Protected Setup (WPS): timeout in enrollee mode");
+            break;
+        case SYSTEM_EVENT_STA_WPS_ER_PIN:
+            Serial.println("WiFi Protected Setup (WPS): pin code in enrollee mode");
+            break;
+        case SYSTEM_EVENT_AP_START:
+            Serial.println("WiFi access point started");
+            break;
+        case SYSTEM_EVENT_AP_STOP:
+            Serial.println("WiFi access point  stopped");
+            break;
+        case SYSTEM_EVENT_AP_STACONNECTED:
+            Serial.println("Client connected");
+            break;
+        case SYSTEM_EVENT_AP_STADISCONNECTED:
+            Serial.println("Client disconnected");
+            break;
+        case SYSTEM_EVENT_AP_STAIPASSIGNED:
+            Serial.println("Assigned IP address to client");
+            break;
+        case SYSTEM_EVENT_AP_PROBEREQRECVED:
+            Serial.println("Received probe request");
+            break;
+        case SYSTEM_EVENT_GOT_IP6:
+            Serial.println("IPv6 is preferred");
+            break;
+        case SYSTEM_EVENT_ETH_START:
+            Serial.println("Ethernet started");
+            break;
+        case SYSTEM_EVENT_ETH_STOP:
+            Serial.println("Ethernet stopped");
+            break;
+        case SYSTEM_EVENT_ETH_CONNECTED:
+            Serial.println("Ethernet connected");
+            break;
+        case SYSTEM_EVENT_ETH_DISCONNECTED:
+            Serial.println("Ethernet disconnected");
+            break;
+        case SYSTEM_EVENT_ETH_GOT_IP:
+            Serial.println("Obtained IP address");
+            break;
+        default: break;
+    }*/
 }
 
 void JustWifi::init() {
     WiFi.enableAP(false);
     WiFi.enableSTA(false);
+    //WiFi.onEvent(reinterpret_cast<WiFiEventCb>(&JustWifi::_events), SYSTEM_EVENT_AP_START);
     //WiFi.onEvent(reinterpret_cast<WiFiEventCb>(&JustWifi::_events), WIFI_EVENT_ANY);
+    WiFi.onEvent(
+        [this](WiFiEvent_t event, system_event_info_t info){
+            this->_events(event);
+            if(event == SYSTEM_EVENT_AP_START )
+                if (this->_softap.dhcp)
+                {
+                    WiFi.softAPConfig(this->_softap.ip, this->_softap.gw, this->_softap.netmask);
+                }
+    });
 }
 
 void JustWifi::loop() {
